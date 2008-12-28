@@ -1,0 +1,13 @@
+h1. Ruby-fpdi
+
+FPDI is a port of Setasign's FPDI PHP library to Ruby
+ 
+h2. Pre-requisites
+
+Requires FPDF for Ruby
+
+h2. Status
+
+This code is just a stub. It is not in working order, and requires several 
+other fpdi libraries to be ported.
+
