@@ -1,3 +1,2 @@
 class PDFParser
-  
 end
