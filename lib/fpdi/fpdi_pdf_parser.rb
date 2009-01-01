@@ -1,0 +1,2 @@
+class FPDIPDFParser < PDFParser
+end
