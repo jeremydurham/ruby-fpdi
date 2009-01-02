@@ -143,5 +143,188 @@ class PDFParser
     end
   end
 
+  def pdf_read_value(c, token=nil)
+    token ||= pdf_read_token(c)
+    return false unless token
+    
+    case token
+    when '<' then
+      pos = c.offset
+      
+      while(true) do
+        match = c.buffer.match('>') # Need to respect pos
+        
+        unless match
+          if !c.increase_length
+            return false
+          else
+            next # continue?
+          end
+        end
+        result = c.buffer[c.offset..(match - c.offset)]
+        c.offset = match + 1
+        return [PDF_TYPE_HEX, result]
+      end
+    when '<<' then
+      result = {}
+      while (key = self.pdf_read_token(c) != '>>') do
+        return false unless key
+        return false unless value = self.pdf_read_value(c)
+        result[key] = value
+      end
+      return [PDF_TYPE_DICTIONARY, result]
+    when '[' then
+      result = {}
+      while(token = self.pdf_read_token(c) != ']') do
+        return false unless token
+        return false unless value = self.pdf_read_value(c, token)
+        result << value
+      end
+      return [PDF_TYPE_ARRAY, result]      
+    when '(' then
+      pos = c.offset
+
+      while(true) do
+        match = c.buffer.match(')') # Need to respect pos
+        unless match
+          unless c.increase_length
+            return false
+          else
+            next #continue
+          end
+        end
+        tmpresult = c.buffer[c.offset..(match - c.offset)]
+        m = tmpresult.match(/([\\\\]+)$/)
+        
+        if !m || (m[1].length % 2 == 0)
+          result = tmpresult
+          c.offset = match + 1
+          return [PDF_TYPE_STRING, result]
+        else
+          pos = match + 1
+          
+          if pos > (c.offset + c.length)
+            c.increase_length
+          end
+        end
+      end
+      when 'stream' then
+        o_pos = c.file.pos - c.buffer.length
+        o_offset = c.offset
+        c.reset(startpos = o_pos + o_offset)
+        e = 0
+        e += 1 if c.buffer[0] == 10 || c.buffer[0] == 13
+        e += 1 if c.buffer[1] == 10 || c.buffer[0] != 10
+        
+        if @actual_obj[1][1]['/Length'][0] == PDF_TYPE_OBJREF
+          tmp_c = PDFContext.new(@f)
+          tmp_length = self.pdf_resolve_object(tmp_c, @actual_obj[1][1]['/Length'])
+          length = tmp_length[1][1]
+        else
+          length = @actual_obj[1][1]['/Length'][1]
+        end
+
+        if length > 0
+          c.reset(startpos + e, length)
+          v = c.buffer
+        else
+          v = ''
+        end
+        c.reset(startpos + e + length + "endstream".length)
+        
+        return [PDF_TYPE_STREAM, v]        
+      else
+        if token.to_i > 0
+          if tok2 = self.pdf_read_token(c) != false
+            if tok2.to_i > 0
+              if tok3 = self.pdf_read_token(c) != false
+                case tok3
+                when 'obj' then return [PDF_TYPE_OBJDEC, token, tok2]
+                when 'R' then [PDF_TYPE_OBJREF, token, tok2]
+                end
+                c.stack.push(tok3)
+              end
+            end
+            c.stack.push(tok2)
+          end
+          
+          return [PDF_TYPE_NUMBERIC, token]
+        else
+          [PDF_TYPE_TOKEN, token]
+        end
+      end
+  end
   
+  def pdf_resolve_object(c, obj_spec, encapsulate = true)
+    return false unless obj_spec # Array check
+    if obj_spec[0] == PDF_TYPE_OBJREF
+      if @xref['xref'][obj_spec[1]][obj_spec[2]]
+        old_pos = @c.file.pos
+        
+        c.reset(@xref['xref'][obj_spec[1]][obj_spec[2]])
+        header = self.pdf_read_value(c, nil, true)
+        if header[0] != PDF_TYPE_OBJDEC || header[1] != obj_spec[1] || header[2] != obj_spec[2]
+          self.error("Unable to find object (#{obj_spec[1]}, #{obj_spec[2]}) at expected location")
+        end
+        
+        @actual_obj = result
+        if encapsulate
+          result = [
+            #PDF_TYPE_OBJECT,
+            'obj' => obj_spec[1],
+            'gen' => obj_spec[2]
+          ]
+        else
+          result = []
+        end
+      
+        while(true) do
+          value = self.pdf_read_value(c)
+          break if !value || result.length > 4
+          break if value[0] == PDF_TYPE_TOKEN && value[1] === 'endobj'
+          result << value
+        end
+        c.reset(old_pos)
+        result[0] = PDF_TYPE_STREAM if result[2][0] == PDF_TYPE_STREAM
+        return result
+      end
+    else
+      return obj_spec
+    end
+  end
+
+  def pdf_read_token(c)
+    return c.stack.shift if c.stack.length
+    
+    while (c.offset >= c.length - 1) do
+      return false if !c.ensure_content
+      # $c->offset += _strspn($c->buffer, " \n\r\t", $c->offset);  		      
+    end
+    
+    char = c.buffer[c.offset += 1]
+    case char
+    when '[' | ']' | '(' | ')' then return char
+    when '<' | '>' then
+      if c.buffer[c.offset] == char
+        return false if !c.ensure_content
+        c.offset += 1
+        return char + char
+      else
+        return char
+      end
+    else
+      return false if !c.ensure_content
+      while(true) do
+        # $pos = _strcspn($c->buffer, " []<>()\r\n\t/", $c->offset);
+        if c.offset + pos <= c.length - 1
+          break
+        else
+          c.increase_length
+        end
+      end
+      result = c.buffer[(c.offset - 1)..(pos + 1)]
+      c.offset += pos
+      return result
+    end
+  end
 end
