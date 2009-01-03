@@ -1,4 +1,5 @@
 class PDFContext
+  attr_accessor :stack, :offset, :length, :buffer
   
   def initialize(f)
     @file = f

@@ -65,11 +65,13 @@ class PDFParser
   end
   
   def pdf_read_xref(result, offset, start=nil, ending=nil)
+    result ||= {}
     if !start || !ending
-      @f.seek(o_pos = offset)
-      data = @f.gets  # Stop at 1024, also need to trim
+
+      @f.seek(o_pos = offset)      
+      data = @f.gets("\r").chomp  # Stop at 1024, also need to trim
       
-      data = @f.gets if data.length == 0 # Stop at 1024, also need to trim        
+      data = @f.gets("\r").chomp if data.length == 0 # Stop at 1024, also need to trim        
       if data != 'xref'
         @f.seek(o_pos)
         data = @f.gets # Limit to 1024 and trim
@@ -102,16 +104,18 @@ class PDFParser
         end
       end
 
-      start = data[0]
-      ending = start + data[1]
+      start = data[0].to_i
+      ending = start + data[1].to_i
 
       result['xref_location'] ||= offset
-      result['max_object'] = ending unless result['max_object'] || ending > result['max_object']
-      ((ending-start)-1).times do |i|
-        data = @f.read(20)
+      result['max_object'] = ending if !result['max_object'] || ending.to_i > result['max_object'].to_i
+      while (start < ending) do
+        start += 1
+        data = @f.read(20).lstrip.chomp
         offset = data[0..10]
         generation = data[11..16]
-        result['xref'][start][generation] ||= offset
+        result['xref'] ||= {}
+        result['xref'].update({ start => { generation.to_i => offset.to_i } })
       end
 
       o_pos = @f.pos
@@ -124,7 +128,7 @@ class PDFParser
           
       c = PDFContext.new(@f)
       trailer = self.pdf_read_value(c)
-      
+
       if trailer[1]['/Prev']
         self.pdf_read_xref(result, trailer[1]['/Prev'][1])
         result['trailer'][1].update!(trailer[1])
@@ -146,7 +150,7 @@ class PDFParser
   end
 
   def pdf_read_value(c, token=nil)
-    token ||= pdf_read_token(c)
+    token ||= self.pdf_read_token(c)
     return false unless token
     
     case token
@@ -296,7 +300,7 @@ class PDFParser
   end
 
   def pdf_read_token(c)
-    return c.stack.shift if c.stack.length
+    return c.stack.shift if c.stack.length > 0
     
     while (c.offset >= c.length - 1) do
       return false if !c.ensure_content
@@ -305,8 +309,8 @@ class PDFParser
     
     char = c.buffer[c.offset += 1]
     case char
-    when '[' | ']' | '(' | ')' then return char
-    when '<' | '>' then
+    when '[', ']', '(', ')' then return char
+    when '<', '>' then 
       if c.buffer[c.offset] == char
         return false if !c.ensure_content
         c.offset += 1
@@ -317,6 +321,8 @@ class PDFParser
     else
       return false if !c.ensure_content
       while(true) do
+        # HACK
+        pos = 4
         # $pos = _strcspn($c->buffer, " []<>()\r\n\t/", $c->offset);
         if c.offset + pos <= c.length - 1
           break
