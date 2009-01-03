@@ -14,6 +14,7 @@ class PDFParser
   PDF_TYPE_STREAM = 10
   
   def initialize(filename)
+    @xref = {}
     @filename = filename
     @f = File.open(@filename, "rb")
     
@@ -65,16 +66,15 @@ class PDFParser
   end
   
   def pdf_read_xref(result, offset, start=nil, ending=nil)
-    result ||= {}
     if !start || !ending
-
       @f.seek(o_pos = offset)      
-      data = @f.gets("\r").chomp  # Stop at 1024, also need to trim
+      data = @f.gets("\r").chomp
       
-      data = @f.gets("\r").chomp if data.length == 0 # Stop at 1024, also need to trim        
+      data = @f.gets("\r").chomp if data.length == 0
+      
       if data != 'xref'
         @f.seek(o_pos)
-        data = @f.gets # Limit to 1024 and trim
+        data = @f.gets("\r").chomp
         if data != 'xref'
           if m = data.match(/(.*xref)(.*)/m)
             @f.seek(o_pos + m[1].length)
@@ -89,10 +89,11 @@ class PDFParser
       end
     
       o_pos = @f.pos
-      data = @f.gets.split(' ') # Limit to 1024 and trim
+      data = @f.gets("\r").chomp.split(' ')
+
       if data.length != 2
         @f.seek(o_pos)
-        data = @f.gets.split(' ') # Limit to 1024 and trim
+        data = @f.gets("\r").chomp.split(' ')
         
         if data.length != 2
           if data.length > 2
@@ -107,40 +108,42 @@ class PDFParser
       start = data[0].to_i
       ending = start + data[1].to_i
 
-      result['xref_location'] ||= offset
-      result['max_object'] = ending if !result['max_object'] || ending.to_i > result['max_object'].to_i
+      result.update('xref_location' => offset)
+      result.update('max_object' => ending) if !result['max_object'] || ending.to_i > result['max_object'].to_i
+
       while (start < ending) do
-        start += 1
         data = @f.read(20).lstrip.chomp
         offset = data[0..10]
         generation = data[11..16]
-        result['xref'] ||= {}
+        result.update('xref' => {}) unless result['xref']
         result['xref'].update({ start => { generation.to_i => offset.to_i } })
+        start += 1
       end
 
       o_pos = @f.pos
-      data = @f.gets # Limit to 1024 and trim
-      data = @f.gets if data.length == 0 # Limit to 1024 and trim
+      data = @f.gets("\r").chomp
+      data = @f.gets("\r").chomp if data.length == 0
         
       if data.match(/trailer/)
         @f.seek(o_pos + m[1].length) if m = data.match(/(.*trailer[ \n\r]*)/)
       end
-          
+      
       c = PDFContext.new(@f)
+
       trailer = self.pdf_read_value(c)
 
       if trailer[1]['/Prev']
         self.pdf_read_xref(result, trailer[1]['/Prev'][1])
-        result['trailer'][1].update!(trailer[1])
+        result['trailer'][1].update(trailer[1])
       else
         result['trailer'] = trailer
       end
     else
-      data = data.split(' ') # Trim
+      data = data.chomp.split(' ')
       
       if data.length != 2
         @f.seek(o_pos)
-        data = @f.gets.split(' ') # Trim and limit to 1024
+        data = @f.gets("\r").chomp.split(' ')
         
         self.Error('Unexpected data in xref table') if data.length != 2
       end
