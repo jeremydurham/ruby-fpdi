@@ -1,15 +1,21 @@
+require 'fpdf_tpl'
+require 'fpdi_pdf_parser'
+
 class FPDI < FPDF_TPL
   FPDF_VERSION = '1.2'
+  
+  attr_accessor :importVersion  
 
   def initialize(orientation='P', unit='mm', format='A4')
+    @parsers = {}
     super(orientation, unit, format)
   end
   
   def setSourceFile(filename)
     @current_filename = filename
     fn = @current_filename
-    
-    @parsers[fn] = FPDI_PDF_Parser.new(fn, self) unless @parsers[fn]
+        
+    @parsers[fn] = FPDIPDFParser.new(fn, self) unless @parsers[fn]
     
     @parsers[fn].getPageCount
   end

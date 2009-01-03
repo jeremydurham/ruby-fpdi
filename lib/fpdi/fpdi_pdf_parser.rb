@@ -1,4 +1,8 @@
+require 'pdf_parser'
+
 class FPDIPDFParser < PDFParser
+  attr_accessor :fpdi
+  
   def initialize(filename, fpdi)
     @fpdi = fpdi
     @filename = filename

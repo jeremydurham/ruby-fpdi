@@ -1,3 +1,5 @@
+require 'pdf_context'
+
 class PDFParser
   PDF_TYPE_NULL = 0
   PDF_TYPE_NUMERIC = 1
@@ -52,14 +54,14 @@ class PDFParser
     @pdfVersion = m[0]
   end    
 
-  def pdf_find_xref  
-    @f.seek((@f.stat.size > 1500 ? @f.stat.size : 1500), IO::SEEK_END)
+  def pdf_find_xref 
+    @f.seek(-(@f.stat.size < 1500 ? @f.stat.size : 1500), IO::SEEK_END)
     data = @f.read(1500)
-    pos = data.length - (data.reverse =~ 'startxref'.reverse)
-    data = data[pos]
+    pos = data.length - (data.reverse =~ /ferxtrats/)
+    data = data[pos..-1]    
     
     self.error("Unable to find pointer to xref table") unless match = data.match(/\s*(\d+).*$/s)
-    return match[1]
+    return match[1].to_i
   end
   
   def pdf_read_xref(result, offset, start=nil, ending=nil)
@@ -85,10 +87,10 @@ class PDFParser
       end
     
       o_pos = @f.pos
-      data = @f.gets(f).split(' ') # Limit to 1024 and trim
+      data = @f.gets.split(' ') # Limit to 1024 and trim
       if data.length != 2
         @f.seek(o_pos)
-        data = @f.gets(f).split(' ') # Limit to 1024 and trim
+        data = @f.gets.split(' ') # Limit to 1024 and trim
         
         if data.length != 2
           if data.length > 2
