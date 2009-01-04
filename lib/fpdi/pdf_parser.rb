@@ -121,9 +121,9 @@ class PDFParser
       end
 
       o_pos = @f.pos
-      data = @f.gets("\r").chomp
-      data = @f.gets("\r").chomp if data.length == 0
-        
+      data = @f.gets("\r")
+      data = @f.gets("\r") if data.chomp.length == 0
+      
       if data.match(/trailer/)
         @f.seek(o_pos + m[1].length) if m = data.match(/(.*trailer[ \n\r]*)/)
       end
@@ -170,13 +170,13 @@ class PDFParser
             next # continue?
           end
         end
+
         result = c.buffer[c.offset..(match - c.offset)]
         c.offset = match + 1
         return [PDF_TYPE_HEX, result]
       end
     when '<<' then
-      result = {}
-      while (key = self.pdf_read_token(c) != '>>') do
+      while ((key = self.pdf_read_token(c)) != '>>') do
         return false unless key
         return false unless value = self.pdf_read_value(c)
         result[key] = value
@@ -244,9 +244,9 @@ class PDFParser
         return [PDF_TYPE_STREAM, v]        
       else
         if token.to_i > 0
-          if tok2 = self.pdf_read_token(c) != false
+          if (tok2 = self.pdf_read_token(c)) != false
             if tok2.to_i > 0
-              if tok3 = self.pdf_read_token(c) != false
+              if (tok3 = self.pdf_read_token(c)) != false
                 case tok3
                 when 'obj' then return [PDF_TYPE_OBJDEC, token, tok2]
                 when 'R' then [PDF_TYPE_OBJREF, token, tok2]
@@ -257,7 +257,7 @@ class PDFParser
             c.stack.push(tok2)
           end
           
-          return [PDF_TYPE_NUMBERIC, token]
+          return [PDF_TYPE_NUMERIC, token]
         else
           [PDF_TYPE_TOKEN, token]
         end
@@ -304,17 +304,19 @@ class PDFParser
 
   def pdf_read_token(c)
     return c.stack.shift if c.stack.length > 0
-    
-    while (c.offset >= c.length - 1) do
+
+    begin
       return false if !c.ensure_content
-      # $c->offset += _strspn($c->buffer, " \n\r\t", $c->offset);  		      
-    end
+      # $c->offset += _strspn($c->buffer, " \n\r\t", $c->offset);
+      c.offset += (c.buffer[c.offset..-1] =~ /[^ |\n|\r|\t]/) || c.offset.length
+    end while (c.offset >= (c.length - 1))
     
-    char = c.buffer[c.offset += 1]
+    char = c.buffer[c.offset += 1].chr
+
     case char
     when '[', ']', '(', ')' then return char
     when '<', '>' then 
-      if c.buffer[c.offset] == char
+      if c.buffer[c.offset].chr == char
         return false if !c.ensure_content
         c.offset += 1
         return char + char
@@ -324,8 +326,7 @@ class PDFParser
     else
       return false if !c.ensure_content
       while(true) do
-        # HACK
-        pos = 4
+        pos = (c.buffer[c.offset..-1] =~ /[ |\[|\]|\<|\>|\(|\)|\r|\n|\t]/) || 0
         # $pos = _strcspn($c->buffer, " []<>()\r\n\t/", $c->offset);
         if c.offset + pos <= c.length - 1
           break
@@ -333,7 +334,8 @@ class PDFParser
           c.increase_length
         end
       end
-      result = c.buffer[(c.offset - 1)..(pos + 1)]
+      result = c.buffer[(c.offset - 1)..(c.offset - 1 + pos)]
+      
       c.offset += pos
       return result
     end
