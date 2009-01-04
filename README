@@ -5,8 +5,8 @@ FPDI is a port of Setasign's FPDI PHP library to Ruby
 FPDI is a library that allows inclusion and manipulation of existing PDFs
 using the FPDI library.
 
-A common scenario is that a designer gives you a PDF and tells you that
-to make the dynamically generated PDF look exactly like their design. 
+A common scenario is that a designer gives you a PDF and tells you
+to make a dynamically generated PDF look exactly like their design. 
 This is a tedious task with most PDF libraries, because you need to
 use basic shapes to build PDFs, and reproducing their complex design 
 perfectly can be time intensive. With FPDI, the designer can build a
@@ -19,6 +19,8 @@ Requires FPDF for Ruby
 
 Status
 
-First passes of most of the FPDI libraries (and dependent libraries) have been 
-ported. There is one library left to port, testing to be done, bugs to squash, 
-and then specs to be written.
+This code is currently pre-alpha code and not ready to be used.
+
+First passes of all of the FPDI libraries have been ported. Currently, I am
+working on getting simple cases to work, squashing porting bugs as I find 
+them, and once that is done I will start writing specs.
