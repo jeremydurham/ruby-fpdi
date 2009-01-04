@@ -8,7 +8,6 @@ class PDFContext
   
   def reset(pos = nil, l = 100)
     @file.seek(pos) if pos
-    
     @buffer = l > 0 ? @file.read(l) : ''
     @offset = 0
     @length = @buffer.length
