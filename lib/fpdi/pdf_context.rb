@@ -1,9 +1,11 @@
 class PDFContext
-  attr_accessor :stack, :offset, :length, :buffer
+  attr_accessor :stack, :offset, :length, :buffer, :file
   
   def initialize(f)
     @file = f
     self.reset
+    @buffer = ''
+    @length = 0
   end
   
   def reset(pos = nil, l = 100)
