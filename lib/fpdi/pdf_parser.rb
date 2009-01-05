@@ -296,8 +296,7 @@ class PDFParser
           result << value
         end
         c.reset(old_pos)
-        # HACK
-        #result[0] = PDF_TYPE_STREAM if result[2][0] == PDF_TYPE_STREAM
+        result[0] = PDF_TYPE_STREAM if result[2][0] == PDF_TYPE_STREAM
         return result
       end
     else
