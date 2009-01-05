@@ -67,7 +67,7 @@ class PDFParser
   
   def pdf_read_xref(result, offset, start=nil, ending=nil)
     if !start || !ending
-      @f.seek(o_pos = offset)      
+      @f.seek(o_pos = offset.to_i)      
       data = @f.gets("\r").chomp
       
       data = @f.gets("\r").chomp if data.length == 0
@@ -130,7 +130,7 @@ class PDFParser
       
       c = PDFContext.new(@f)
 
-      trailer = self.pdf_read_value(c)
+      trailer = self.pdf_read_value(c)      
 
       if trailer[1]['/Prev']
         self.pdf_read_xref(result, trailer[1]['/Prev'][1])
@@ -161,8 +161,9 @@ class PDFParser
       pos = c.offset
       
       while(true) do
-        match = c.buffer.match('>') # Need to respect pos
-        
+        match = c.buffer[pos..-1] =~ />/ # Need to respect pos
+        match += pos if match
+
         unless match
           if !c.increase_length
             return false
@@ -170,12 +171,13 @@ class PDFParser
             next # continue?
           end
         end
-
+        
         result = c.buffer[c.offset..(match - c.offset)]
         c.offset = match + 1
         return [PDF_TYPE_HEX, result]
       end
     when '<<' then
+      result = {}
       while ((key = self.pdf_read_token(c)) != '>>') do
         return false unless key
         return false unless value = self.pdf_read_value(c)
@@ -183,11 +185,11 @@ class PDFParser
       end
       return [PDF_TYPE_DICTIONARY, result]
     when '[' then
-      result = {}
-      while(token = self.pdf_read_token(c) != ']') do
+      result = []
+      while((token = self.pdf_read_token(c)) != ']') do
         return false unless token
         return false unless value = self.pdf_read_value(c, token)
-        result << value
+        result << value.first
       end
       return [PDF_TYPE_ARRAY, result]      
     when '(' then
@@ -217,51 +219,51 @@ class PDFParser
           end
         end
       end
-      when 'stream' then
-        o_pos = c.file.pos - c.buffer.length
-        o_offset = c.offset
-        c.reset(startpos = o_pos + o_offset)
-        e = 0
-        e += 1 if c.buffer[0] == 10 || c.buffer[0] == 13
-        e += 1 if c.buffer[1] == 10 || c.buffer[0] != 10
-        
-        if @actual_obj[1][1]['/Length'][0] == PDF_TYPE_OBJREF
-          tmp_c = PDFContext.new(@f)
-          tmp_length = self.pdf_resolve_object(tmp_c, @actual_obj[1][1]['/Length'])
-          length = tmp_length[1][1]
-        else
-          length = @actual_obj[1][1]['/Length'][1]
-        end
-
-        if length > 0
-          c.reset(startpos + e, length)
-          v = c.buffer
-        else
-          v = ''
-        end
-        c.reset(startpos + e + length + "endstream".length)
-        
-        return [PDF_TYPE_STREAM, v]        
+    when 'stream' then
+      o_pos = c.file.pos - c.buffer.length
+      o_offset = c.offset
+      c.reset(startpos = o_pos + o_offset)
+      e = 0
+      e += 1 if c.buffer[0] == 10 || c.buffer[0] == 13
+      e += 1 if c.buffer[1] == 10 || c.buffer[0] != 10
+      
+      if @actual_obj[1][1]['/Length'][0] == PDF_TYPE_OBJREF
+        tmp_c = PDFContext.new(@f)
+        tmp_length = self.pdf_resolve_object(tmp_c, @actual_obj[1][1]['/Length'])
+        length = tmp_length[1][1]
       else
-        if token.to_i > 0
-          if (tok2 = self.pdf_read_token(c)) != false
-            if tok2.to_i > 0
-              if (tok3 = self.pdf_read_token(c)) != false
-                case tok3
-                when 'obj' then return [PDF_TYPE_OBJDEC, token, tok2]
-                when 'R' then [PDF_TYPE_OBJREF, token, tok2]
-                end
-                c.stack.push(tok3)
-              end
-            end
-            c.stack.push(tok2)
-          end
-          
-          return [PDF_TYPE_NUMERIC, token]
-        else
-          [PDF_TYPE_TOKEN, token]
-        end
+        length = @actual_obj[1][1]['/Length'][1]
       end
+
+      if length > 0
+        c.reset(startpos + e, length)
+        v = c.buffer
+      else
+        v = ''
+      end
+      c.reset(startpos + e + length + "endstream".length)
+      
+      return [PDF_TYPE_STREAM, v]        
+    else
+      if token.to_i > 0
+        if (tok2 = self.pdf_read_token(c)) != false
+          if tok2 =~ /[0-9]{1,}/
+            if (tok3 = self.pdf_read_token(c)) != false
+              case tok3
+              when 'obj' then return [PDF_TYPE_OBJDEC, token.to_i, tok2.to_i]
+              when 'R' then return [PDF_TYPE_OBJREF, token.to_i, tok2.to_i]
+              end
+              c.stack.push(tok3)
+            end
+          end
+          c.stack.push(tok2)
+        end
+        
+        [PDF_TYPE_NUMERIC, token]
+      else
+        [PDF_TYPE_TOKEN, token]
+      end
+    end
   end
   
   def pdf_resolve_object(c, obj_spec, encapsulate = true)
@@ -271,12 +273,12 @@ class PDFParser
         old_pos = @c.file.pos
         
         c.reset(@xref['xref'][obj_spec[1]][obj_spec[2]])
-        header = self.pdf_read_value(c, nil, true)
+        header = self.pdf_read_value(c, nil)
         if header[0] != PDF_TYPE_OBJDEC || header[1] != obj_spec[1] || header[2] != obj_spec[2]
           self.error("Unable to find object (#{obj_spec[1]}, #{obj_spec[2]}) at expected location")
         end
         
-        @actual_obj = result
+        @actual_obj = nil
         if encapsulate
           result = [
             #PDF_TYPE_OBJECT,
@@ -294,7 +296,8 @@ class PDFParser
           result << value
         end
         c.reset(old_pos)
-        result[0] = PDF_TYPE_STREAM if result[2][0] == PDF_TYPE_STREAM
+        # HACK
+        #result[0] = PDF_TYPE_STREAM if result[2][0] == PDF_TYPE_STREAM
         return result
       end
     else
@@ -311,7 +314,8 @@ class PDFParser
       c.offset += (c.buffer[c.offset..-1] =~ /[^ |\n|\r|\t]/) || c.offset.length
     end while (c.offset >= (c.length - 1))
     
-    char = c.buffer[c.offset += 1].chr
+    char = c.buffer[c.offset].chr
+    c.offset += 1
 
     case char
     when '[', ']', '(', ')' then return char
@@ -335,7 +339,6 @@ class PDFParser
         end
       end
       result = c.buffer[(c.offset - 1)..(c.offset - 1 + pos)]
-      
       c.offset += pos
       return result
     end
