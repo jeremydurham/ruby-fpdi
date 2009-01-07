@@ -4,8 +4,6 @@ class PDFContext
   def initialize(f)
     @file = f
     self.reset
-    @buffer = ''
-    @length = 0
   end
   
   def reset(pos = nil, l = 100)
