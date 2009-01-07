@@ -11,7 +11,7 @@ This is a tedious task with most PDF libraries, because you need to
 use basic shapes to build PDFs, and reproducing their complex design 
 perfectly can be time intensive. With FPDI, the designer can build a
 "template" and you can "write on" the template, preserving the initial
-designer and saving incredible amounts of time. 
+design and saving time. 
  
 Pre-requisites
 
