@@ -7,7 +7,7 @@ class FPDIPDFParser < PDFParser
     @fpdi = fpdi
     @filename = filename
     super(filename)
-    pages = self.pdf_resolve_object(@c, @root[1][1]['/Pages'])
+    pages = self.pdf_resolve_object(@c, @root['1'][1]['/Pages'])
     self.read_pages(@c, pages, @pages)
     @page_count = @pages.length
   end
@@ -175,7 +175,7 @@ class FPDIPDFParser < PDFParser
   end
   
   def read_pages(c, pages, result)
-    kids = self.pdf_resolve_object(c, pages[1][1]['/Kids'])
+    kids = self.pdf_resolve_object(c, pages['1'][1]['/Kids'])
     
     if !kids.is_a?(Array)
       self.fpdi.error('Cannot find /Kids in current /Page-Dictionary')

@@ -268,6 +268,7 @@ class PDFParser
   
   def pdf_resolve_object(c, obj_spec, encapsulate = true)
     return false unless obj_spec # Array check
+    
     if obj_spec[0] == PDF_TYPE_OBJREF
       if @xref['xref'][obj_spec[1]][obj_spec[2]]
         old_pos = @c.file.pos
@@ -280,23 +281,27 @@ class PDFParser
         
         @actual_obj = nil
         if encapsulate
-          result = [
-            #PDF_TYPE_OBJECT,
+          result = {
+            '0'   => PDF_TYPE_OBJECT,
             'obj' => obj_spec[1],
             'gen' => obj_spec[2]
-          ]
+          }
         else
           result = []
         end
       
+        
+        result_pos = 1
         while(true) do
-          value = self.pdf_read_value(c)
+          value = self.pdf_read_value(c)          
           break if !value || result.length > 4
           break if value[0] == PDF_TYPE_TOKEN && value[1] === 'endobj'
-          result << value
+          result[result_pos.to_s] = value
         end
+        
         c.reset(old_pos)
-        result[0] = PDF_TYPE_STREAM if result[2][0] == PDF_TYPE_STREAM
+
+        result['0'] = PDF_TYPE_STREAM if result['2'] && result['2'][0] == PDF_TYPE_STREAM
         return result
       end
     else
