@@ -5,6 +5,8 @@ FPDI is a port of Setasign's FPDI PHP library to Ruby
 FPDI is a library that allows inclusion and manipulation of existing PDFs
 using the FPDI library.
 
+Purpose
+
 A common scenario is that a designer gives you a PDF and tells you
 to make a dynamically generated PDF look exactly like their design. 
 This is a tedious task with most PDF libraries, because you need to
@@ -13,6 +15,8 @@ perfectly can be time intensive. With FPDI, the designer can build a
 "template" and you can "write on" the template, preserving the initial
 design and saving time. 
  
+Usage
+
 Pre-requisites
 
 Requires FPDF for Ruby
