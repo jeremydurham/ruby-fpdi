@@ -1,8 +1,8 @@
-require 'fpdf_tpl'
-require 'fpdi_pdf_parser'
+require File.dirname(__FILE__) + '/fpdf_tpl'
+require File.dirname(__FILE__) + '/fpdi_pdf_parser'
 
 class FPDI < FPDF_TPL
-  FPDF_VERSION = '1.2'
+  VERSION = '1.2'
   
   attr_accessor :importVersion  
 

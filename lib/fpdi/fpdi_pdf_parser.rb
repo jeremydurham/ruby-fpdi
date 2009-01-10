@@ -1,4 +1,4 @@
-require 'pdf_parser'
+require File.dirname(__FILE__) + '/pdf_parser'
 
 class FPDIPDFParser < PDFParser
   attr_accessor :fpdi

@@ -1,3 +1,5 @@
+require File.dirname(__FILE__) + '/fpdf'
+
 class FPDF_TPL < FPDF
   FPDF_TPL_VERSION = '1.1.1'
   

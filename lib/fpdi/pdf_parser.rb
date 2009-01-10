@@ -1,4 +1,4 @@
-require 'pdf_context'
+require File.dirname(__FILE__) + '/pdf_context'
 
 class PDFParser
   PDF_TYPE_NULL = 0
