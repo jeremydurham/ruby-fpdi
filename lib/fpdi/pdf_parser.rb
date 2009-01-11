@@ -32,12 +32,12 @@ class PDFParser
     @f.close unless @f.closed?
   end
   
-  def error(msg)
-    puts "Error: " + msg
+  def Error(msg)
+    raise 'FPDI error: '+msg
   end
   
   def getEncryption
-    self.error('File is encrypted') if @xref['trailer'][1]['/Encrypt']
+    self.Error('File is encrypted') if @xref['trailer'][1]['/Encrypt']
   end
   
   def pdf_find_root

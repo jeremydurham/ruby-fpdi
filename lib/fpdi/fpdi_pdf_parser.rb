@@ -12,8 +12,8 @@ class FPDIPDFParser < PDFParser
     @page_count = @pages.length
   end
   
-  def error(msg)
-    self.fpdi.error(msg)
+  def Error(msg)
+    self.fpdi.Error(msg)
   end
   
   def getPageCount
@@ -23,7 +23,7 @@ class FPDIPDFParser < PDFParser
   def setPageno(pageno)
     pageno = pageno - 1
     if pageno < 0 || pageno >= self.getPageCount
-      self.fpdi.error("Pagenumber is wrong!")
+      self.fpdi.Error("Pagenumber is wrong!")
     end
     
     @pageno = pageno
@@ -104,7 +104,7 @@ class FPDIPDFParser < PDFParser
           # decoder = filterName.new(fpdi)          
           stream = decoder.decode(stream)
         else
-          self.fpdi.error(sprintf("Unsupported Filter: %s",_filter[1]))
+          self.fpdi.Error(sprintf("Unsupported Filter: %s",_filter[1]))
         end
       end
     end
@@ -178,7 +178,7 @@ class FPDIPDFParser < PDFParser
     kids = self.pdf_resolve_object(c, pages['1'][1]['/Kids'])
     
     if !kids.is_a?(Array)
-      self.fpdi.error('Cannot find /Kids in current /Page-Dictionary')
+      self.fpdi.Error('Cannot find /Kids in current /Page-Dictionary')
     else
       kids[1].each do |v|
         pg = self.pdf_resolve_object(c, v)
