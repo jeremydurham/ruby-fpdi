@@ -26,9 +26,9 @@ class FPDI < FPDF_TPL
     fn = @current_filename
     parser = @parsers[fn]
     parser.setPageno(pageno)
-    
+
     @tpl += 1
-    @tpls[@tpl] = []
+    @tpls[@tpl] = {}
     tpl = @tpls[@tpl]
     tpl['parser'] = parser
     tpl['resources'] = parser.getPageResources
