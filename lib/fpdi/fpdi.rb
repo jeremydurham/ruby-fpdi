@@ -4,7 +4,7 @@ require File.dirname(__FILE__) + '/fpdi_pdf_parser'
 class FPDI < FPDF_TPL
   VERSION = '1.2'
   
-  attr_accessor :importVersion  
+  attr_accessor :importVersion, :k
 
   def initialize(orientation='P', unit='mm', format='A4')
     @parsers = {}

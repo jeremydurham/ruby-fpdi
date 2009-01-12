@@ -189,7 +189,7 @@ class PDFParser
       while((token = self.pdf_read_token(c)) != ']') do
         return false unless token
         return false unless value = self.pdf_read_value(c, token)
-        result << value.first
+        result << value
       end
       return [PDF_TYPE_ARRAY, result]      
     when '(' then
@@ -228,13 +228,13 @@ class PDFParser
       e = 0
       e += 1 if c.buffer[0] == 10 || c.buffer[0] == 13
       e += 1 if c.buffer[1] == 10 || c.buffer[0] != 10
-      
+                                     
       if @actual_obj[1][1]['/Length'][0] == PDF_TYPE_OBJREF
         tmp_c = PDFContext.new(@f)
         tmp_length = self.pdf_resolve_object(tmp_c, @actual_obj[1][1]['/Length'])
-        length = tmp_length[1][1]
+        length = tmp_length[1][1].to_i
       else
-        length = @actual_obj[1][1]['/Length'][1]
+        length = @actual_obj[1][1]['/Length'][1].to_i
       end
 
       if length > 0
@@ -281,32 +281,33 @@ class PDFParser
           self.error("Unable to find object (#{obj_spec[1]}, #{obj_spec[2]}) at expected location")
         end
         
-        @actual_obj = nil
         if encapsulate
-          result = {
+          @actual_obj = {
             '0'   => PDF_TYPE_OBJECT,
             'obj' => obj_spec[1],
             'gen' => obj_spec[2]
           }
         else
-          result = {}
+          @actual_obj = {}
         end
       
         result_pos = 1
         while(true) do
-          value = self.pdf_read_value(c)
-          break if !value || result.length > 4
+          value = self.pdf_read_value(c)          
+          break if !value || @actual_obj.length > 4
           break if value[0] == PDF_TYPE_TOKEN && value[1] == 'endobj'
-          result[result_pos.to_s] = value
+          @actual_obj[result_pos] = value
+          result_pos += 1
         end
         
         c.reset(old_pos)
 
-        result['0'] = PDF_TYPE_STREAM if result['2'] && result['2'][0] == PDF_TYPE_STREAM
-        return result
+        @actual_obj[0] = PDF_TYPE_STREAM if @actual_obj[2] && @actual_obj[2][0] == PDF_TYPE_STREAM
+
+        @actual_obj
       end
     else
-      return obj_spec
+      obj_spec
     end
   end
 

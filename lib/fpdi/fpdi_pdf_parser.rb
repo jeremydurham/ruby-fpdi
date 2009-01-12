@@ -1,13 +1,15 @@
 require File.dirname(__FILE__) + '/pdf_parser'
 
 class FPDIPDFParser < PDFParser
-  attr_accessor :fpdi
+  attr_accessor :fpdi, :availableBoxes
   
   def initialize(filename, fpdi)
+    @availableBoxes = ['/MediaBox','/CropBox','/BleedBox','/TrimBox','/ArtBox']
     @fpdi = fpdi
     @filename = filename
+    @pages = []
     super(filename)
-    pages = self.pdf_resolve_object(@c, @root['1'][1]['/Pages'])
+    pages = self.pdf_resolve_object(@c, @root[1][1]['/Pages'])
     self.read_pages(@c, pages, @pages)
     @page_count = @pages.length
   end
@@ -63,7 +65,7 @@ class FPDIPDFParser < PDFParser
   
   def _getPageContent(content_ref)
     contents = []
-    
+        
     if content_ref[0] == PDF_TYPE_OBJREF
       content = self.pdf_resolve_object(@c, content_ref)
       if content[1][0] == PDF_TYPE_ARRAY
@@ -90,7 +92,7 @@ class FPDIPDFParser < PDFParser
         filters = _filter[1]
       end
     end
-    
+
     stream = obj[2][1]
     
     filters.each do |filter|
@@ -125,10 +127,10 @@ class FPDIPDFParser < PDFParser
     if box && box[0] == PDF_TYPE_ARRAY
       b = box[1]
       return {
-              "x" => b[0][1] / self.fpdi.k,
-              "y" => b[1][1] / self.fpdi.k,
-              "w" => Math.abs((b[0][1] - b[2][1])/self.fpdi.k),
-              "h" => Math.abs((b[1][1] - b[3][1])/self.fpdi.k)              
+              "x" => b[0][1].to_i / self.fpdi.k.to_i,
+              "y" => b[1][1].to_i / self.fpdi.k.to_i,
+              "w" => ((b[0][1].to_i - b[2][1].to_i)/self.fpdi.k.to_i).abs,
+              "h" => ((b[1][1].to_i - b[3][1].to_i)/self.fpdi.k.to_i).abs
               }
     elsif !page[1][1]['/Parent']
       return false
@@ -175,14 +177,14 @@ class FPDIPDFParser < PDFParser
   end
   
   def read_pages(c, pages, result)
-    kids = self.pdf_resolve_object(c, pages['1'][1]['/Kids'])
+    kids = self.pdf_resolve_object(c, pages[1][1]['/Kids'])
     
     if !kids.is_a?(Array)
       self.fpdi.Error('Cannot find /Kids in current /Page-Dictionary')
     else
       kids[1].each do |v|
         pg = self.pdf_resolve_object(c, v)
-        if pg[1][1]['/Type'][1] == '/Pages'
+        if pg[1][1]['/Type'][1] == '/Pages'          
           self.read_pages(c, pg, result)
         else
           result.push(pg)
