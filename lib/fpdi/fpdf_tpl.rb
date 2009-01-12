@@ -4,6 +4,8 @@ class FPDF_TPL < FPDF
   FPDF_TPL_VERSION = '1.1.1'
   
   def initialize(orientation='P', unit='mm', format='A4')
+    @tpls = {}
+    @tpl = 0
     super(orientation, unit, format)
   end
   
