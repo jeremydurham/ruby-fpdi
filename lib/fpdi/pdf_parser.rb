@@ -161,7 +161,7 @@ class PDFParser
       pos = c.offset
       
       while(true) do
-        match = c.buffer[pos..-1] =~ />/ # Need to respect pos
+        match = c.buffer[pos..-1] =~ />/
         match += pos if match
 
         unless match
@@ -196,7 +196,9 @@ class PDFParser
       pos = c.offset
 
       while(true) do
-        match = c.buffer.match(')') # Need to respect pos
+        match = c.buffer =~ /\)/
+        match += pos if match
+        
         unless match
           unless c.increase_length
             return false
@@ -287,15 +289,14 @@ class PDFParser
             'gen' => obj_spec[2]
           }
         else
-          result = []
+          result = {}
         end
       
-        
         result_pos = 1
         while(true) do
-          value = self.pdf_read_value(c)          
+          value = self.pdf_read_value(c)
           break if !value || result.length > 4
-          break if value[0] == PDF_TYPE_TOKEN && value[1] === 'endobj'
+          break if value[0] == PDF_TYPE_TOKEN && value[1] == 'endobj'
           result[result_pos.to_s] = value
         end
         
@@ -334,8 +335,7 @@ class PDFParser
     else
       return false if !c.ensure_content
       while(true) do
-        pos = (c.buffer[c.offset..-1] =~ /[ |\[|\]|\<|\>|\(|\)|\r|\n|\t]/) || 0
-        # $pos = _strcspn($c->buffer, " []<>()\r\n\t/", $c->offset);
+        pos = (c.buffer[c.offset..-1] =~ /[ |\[|\]|\<|\>|\(|\)|\r|\n|\t]/) || c.buffer[c.offset-1..-1].length
         if c.offset + pos <= c.length - 1
           break
         else
