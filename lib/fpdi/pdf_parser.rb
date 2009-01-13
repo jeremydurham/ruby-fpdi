@@ -247,9 +247,9 @@ class PDFParser
       
       return [PDF_TYPE_STREAM, v]        
     else
-      if token.to_i > 0
+      if token =~ /[0-9]$/
         if (tok2 = self.pdf_read_token(c)) != false
-          if tok2 =~ /[0-9]{1,}/
+          if tok2 =~ /[0-9]$/
             if (tok3 = self.pdf_read_token(c)) != false
               case tok3
               when 'obj' then return [PDF_TYPE_OBJDEC, token.to_i, tok2.to_i]
@@ -277,6 +277,7 @@ class PDFParser
         
         c.reset(@xref['xref'][obj_spec[1]][obj_spec[2]])
         header = self.pdf_read_value(c, nil)
+        
         if header[0] != PDF_TYPE_OBJDEC || header[1] != obj_spec[1] || header[2] != obj_spec[2]
           self.error("Unable to find object (#{obj_spec[1]}, #{obj_spec[2]}) at expected location")
         end
@@ -293,7 +294,7 @@ class PDFParser
       
         result_pos = 1
         while(true) do
-          value = self.pdf_read_value(c)          
+          value = self.pdf_read_value(c)
           break if !value || @actual_obj.length > 4
           break if value[0] == PDF_TYPE_TOKEN && value[1] == 'endobj'
           @actual_obj[result_pos] = value
@@ -311,12 +312,11 @@ class PDFParser
     end
   end
 
-  def pdf_read_token(c)
-    return c.stack.shift if c.stack.length > 0
+  def pdf_read_token(c)    
+    return c.stack.pop if c.stack.length > 0
 
     begin
       return false if !c.ensure_content
-      # $c->offset += _strspn($c->buffer, " \n\r\t", $c->offset);
       c.offset += (c.buffer[c.offset..-1] =~ /[^ |\n|\r|\t]/) || c.offset.length
     end while (c.offset >= (c.length - 1))
     
@@ -336,7 +336,7 @@ class PDFParser
     else
       return false if !c.ensure_content
       while(true) do
-        pos = (c.buffer[c.offset..-1] =~ /[ |\[|\]|\<|\>|\(|\)|\r|\n|\t]/) || c.buffer[c.offset-1..-1].length
+        pos = (c.buffer[c.offset..-1] =~ /[ |\[|\]|\<|\>|\(|\)|\r|\n|\t]/) || c.buffer[c.offset..-1].length
         if c.offset + pos <= c.length - 1
           break
         else
@@ -345,7 +345,7 @@ class PDFParser
       end
       result = c.buffer[(c.offset - 1)..(c.offset - 1 + pos)]
       c.offset += pos
-      return result
+      result
     end
   end
 end
