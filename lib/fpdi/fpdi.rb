@@ -35,6 +35,7 @@ class FPDI < FPDF_TPL
     tpl['buffer'] = parser.getContent
     
     return self.Error(sprintf("Unknown box: %s", boxName)) unless parser.availableBoxes.include?(boxName)
+
     pageboxes = parser.getPageBoxes(pageno)
     
     boxName = '/CropBox' if !pageboxes[boxName] && (boxName == '/BleedBox' || boxName == '/TrimBox' || boxName == '/ArtBox')
@@ -48,7 +49,7 @@ class FPDI < FPDF_TPL
     tpl['y'] = 0
     page = parser.pages[parser.pageno]
     rotation = parser.getPageRotation(pageno)
-    if rotation[1] && ((angle = rotation[1] % 360) != 0)
+    if rotation[1] && ((angle = rotation[1].to_i % 360) != 0)
       steps = angle / 90
       
       _w = tpl['w']
