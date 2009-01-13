@@ -6,6 +6,8 @@ class FPDF_TPL < FPDF
   def initialize(orientation='P', unit='mm', format='A4')
     @tpls = {}
     @tpl = 0
+    @tplprefix = "/TPL"
+    @_res = {}
     super(orientation, unit, format)
   end
   
@@ -82,7 +84,7 @@ class FPDF_TPL < FPDF
     _h = wh['h']
     
     self._out(sprintf("q %.4f 0 0 %.4f %.2f %.2f cm", (_w/w), (_h/h), _x*@k, (@h-(_y+_h))*@k))
-    self._out(@tplprefix + tplidx + " Do Q")
+    self._out("#{@tplprefix}#{tplidx} Do Q")
 
     { 'w' => _w, 'h' => _h }    
   end
@@ -110,7 +112,7 @@ class FPDF_TPL < FPDF
     
     super(family, style, size)
     fontkey = @FontFamily + @FontStyle
-    
+
     if @_intpl
       @_res['tpl'][@tpl]['fonts'][fontkey] = @fonts[fontkey]
     else

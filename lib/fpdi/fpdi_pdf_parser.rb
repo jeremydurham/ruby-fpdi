@@ -1,7 +1,7 @@
 require File.dirname(__FILE__) + '/pdf_parser'
 
 class FPDIPDFParser < PDFParser
-  attr_accessor :fpdi, :availableBoxes
+  attr_accessor :fpdi, :availableBoxes, :pages, :pageno
   
   def initialize(filename, fpdi)
     @availableBoxes = ['/MediaBox','/CropBox','/BleedBox','/TrimBox','/ArtBox']
@@ -123,7 +123,7 @@ class FPDIPDFParser < PDFParser
       tmp_box = self.pdf_resolve_object(@c, box)
       box = tmp_box[1]
     end
-    
+
     if box && box[0] == PDF_TYPE_ARRAY
       b = box[1]
       return {
@@ -144,9 +144,9 @@ class FPDIPDFParser < PDFParser
   end
   
   def _getPageBoxes(page)
-    boxes = []
+    boxes = {}
     
-    @availableBoxes.each do |box|
+    @availableBoxes.each do |box|      
       if _box = self.getPageBox(page, box)
         boxes[box] = _box
       end
@@ -184,7 +184,7 @@ class FPDIPDFParser < PDFParser
     else
       kids[1].each do |v|
         pg = self.pdf_resolve_object(c, v)
-        if pg[1][1]['/Type'][1] == '/Pages'          
+        if pg[1][1]['/Type'][1] == '/Pages'
           self.read_pages(c, pg, result)
         else
           result.push(pg)
