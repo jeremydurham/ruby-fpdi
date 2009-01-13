@@ -6,12 +6,12 @@ describe FPDI do
     @pdf = FPDI.new
     @pdf.setSourceFile(File.dirname(__FILE__) + '/pdf/simple.pdf')
     tplidx = @pdf.importPage(1, '/MediaBox')
-    @pdf.addPage
+    @pdf.AddPage
     @pdf.useTemplate(tplidx, 10, 10, 90)        
   end
   
   it "should successfully parse a simple PDF" do
-    @pdf.Output('newpdf.pdf', 'D').should_not be_nil
+    @pdf.Output('newpdf.pdf')
   end
     
 end
