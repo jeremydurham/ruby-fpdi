@@ -83,8 +83,8 @@ class FPDF_TPL < FPDF
     _w = wh['w']
     _h = wh['h']
     
-    self._out(sprintf("q %.4f 0 0 %.4f %.2f %.2f cm", (_w/w), (_h/h), _x*@k, (@h-(_y+_h))*@k))
-    self._out("#{@tplprefix}#{tplidx} Do Q")
+    self.out(sprintf("q %.4f 0 0 %.4f %.2f %.2f cm", (_w/w), (_h/h), _x*@k, (@h-(_y+_h))*@k))
+    self.out("#{@tplprefix}#{tplidx} Do Q")
 
     { 'w' => _w, 'h' => _h }    
   end
@@ -149,68 +149,68 @@ class FPDF_TPL < FPDF
     super(link, y, page)
   end
   
-  def _putformxobjects
+  def putformxobjects
     filter = @compress ? '/Filter /FlateDecode ' : ''
     # reset @tpls
     @tpls.each do |tplidx, tpl|
       p = @compress ? Zlib::Deflate.deflate(tpl['buffer']) : tpl['buffer']
-      self._newobj
+      self.newobj
       @tpls[tplidx]['n'] = @n
-      self._out('<<' + filter + '/Type /XObject')
-      self._out('/Subtype /Form')
-      self._out('/FormType 1')
-      self._out(sprintf('/BBox [%.2f %.2f %.2f %.2f]',tpl['x'] * @k, (tpl['h'] - tpl['y']) * @k, tpl['w'] * @k, (tpl['h'] - tpl['y'] - tpl['h']) * @k))
-      self._out('/Resources ')
-      self._out('<</ProcSet [/PDF /Text /ImageB /ImageC /ImageI]')
+      self.out('<<' + filter + '/Type /XObject')
+      self.out('/Subtype /Form')
+      self.out('/FormType 1')
+      self.out(sprintf('/BBox [%.2f %.2f %.2f %.2f]',tpl['x'] * @k, (tpl['h'] - tpl['y']) * @k, tpl['w'] * @k, (tpl['h'] - tpl['y'] - tpl['h']) * @k))
+      self.out('/Resources ')
+      self.out('<</ProcSet [/PDF /Text /ImageB /ImageC /ImageI]')
     
       if @_res['tpl'][tplidx]['fonts'] && @_res['tpl'][tplidx]['fonts'].length > 0
-        self._out('/Font <<')
-        @_res['tpl'][tplidx]['fonts'].each { |font| self._out('/F' + font['i'] + ' ' + font['n'] + ' 0 R') }
+        self.out('/Font <<')
+        @_res['tpl'][tplidx]['fonts'].each { |font| self.out('/F' + font['i'] + ' ' + font['n'] + ' 0 R') }
         self.out('>>')
       end
       
       if (@_res['tpl'][tplidx]['images'] && @_res['tpl'][tplidx]['images'].length > 0) || (@_res['tpl'][tplidx]['tpls'] && @_res['tpl'][tplidx]['tpls'].length > 0)
-        self._out('/XObject <<')
+        self.out('/XObject <<')
         
         if @_res['tpl'][tplidx]['images'] && @_res['tpl'][tplidx]['images'].length > 0
-          @_res['tpl'][tplidx]['images'].each { |image| self._out('/I' + image[i] + ' ' + image['n'] + ' 0 R') }
+          @_res['tpl'][tplidx]['images'].each { |image| self.out('/I' + image[i] + ' ' + image['n'] + ' 0 R') }
         end
         
         if @_res['tpl'][tplidx]['tpls'] && @_res['tpl'][tplidx]['tpls'].length > 0
-          @_res['tpl'][tplidx]['tpls'].each { |i| self._out('/TPL' + i + ' ' + tpl['n'] + ' 0 R') }
+          @_res['tpl'][tplidx]['tpls'].each { |i| self.out('/TPL' + i + ' ' + tpl['n'] + ' 0 R') }
         end
-        self._out('>>')
+        self.out('>>')
       end
-      self._out('>>')
-      self._out('/Length ' + p.length + ' >>')
-      self._putstream(p)
-      self._out('endobj')
+      self.out('>>')
+      self.out('/Length ' + p.length + ' >>')
+      self.putstream(p)
+      self.out('endobj')
     end
   end
           
-  def _putresources
-    self._putfonts
-    self._putimages
-    self._putformxobjects
+  def putresources
+    self.putfonts
+    self.putimages
+    self.putformxobjects
     self.offsets[2] = @buffer.length
-    self._out('2 0 obj')
-    self._out('<<')
-    self._putresourcedict
-    self._out('>>')
-    self._out('endobj')
+    self.out('2 0 obj')
+    self.out('<<')
+    self.putresourcedict
+    self.out('>>')
+    self.out('endobj')
   end
   
-  def _putxobjectdict
+  def putxobjectdict
     super
     
     if @tpls.length > 0
       @tpls.each do |tplidx, tpl|
-        self._out('/TPL' + tplidx + ' ' + tpl['n'] + ' 0 R')
+        self.out("#{@tplprefix}#{tplidx} #{tpl['n']} 0 R")
       end
     end
   end
   
-  def _out(s)
+  def out(s)
     if @state == 2
       unless @_intpl
         @pages[@page] += s + "\n"

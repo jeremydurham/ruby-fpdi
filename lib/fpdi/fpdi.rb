@@ -2,6 +2,17 @@ require File.dirname(__FILE__) + '/fpdf_tpl'
 require File.dirname(__FILE__) + '/fpdi_pdf_parser'
 
 class FPDI < FPDF_TPL
+  PDF_TYPE_NULL = 0
+  PDF_TYPE_NUMERIC = 1
+  PDF_TYPE_TOKEN = 2
+  PDF_TYPE_HEX = 3
+  PDF_TYPE_STRING = 4
+  PDF_TYPE_DICTIONARY = 5
+  PDF_TYPE_ARRAY = 6
+  PDF_TYPE_OBJDEC = 7
+  PDF_TYPE_OBJREF = 8
+  PDF_TYPE_OBJECT = 9
+  PDF_TYPE_STREAM = 10
   VERSION = '1.2'
   
   attr_accessor :importVersion, :k
@@ -84,20 +95,20 @@ class FPDI < FPDF_TPL
   end
   
   def useTemplate(tplidx, _x=nil, _y=nil, _w=0, _h=0)
-    self._out('q 0 J 1 w 0 j 0 G')
+    self.out('q 0 J 1 w 0 j 0 G')
     s = super(tplidx, _x, _y, _w, _h)
-    self._out('Q')
+    self.out('Q')
     s
   end
   
-  def _putimportedobjects
+  def putimportedobjects
     if @parsers.length > 0
       @parsers.each do |filename, p|
         @current_parser = @parsers[filename]
         if @_obj_stack[filename]
           @_obj_stack[filename].each_key do |n|
             nObj = @current_parser.pdf_resolve_object(@current_parser.c, @_obj_stack[filename][n][1])
-            _newobj(@_obj_stack[filename][n][0])
+            self._newobj(@_obj_stack[filename][n][0])
             
             if nObj[0] == PDF_TYPE_STREAM
               self.pdf_write_value(nObj)
@@ -105,7 +116,7 @@ class FPDI < FPDF_TPL
               self.pdf_write_value(nObj[1])
             end
             
-            self._out('endobj')
+            self.out('endobj')
           end
         end
       end
@@ -116,116 +127,116 @@ class FPDI < FPDF_TPL
     @PDFVersion = @importVersion > @PDFVersion ? @importVersion : @PDFVersion
   end
   
-  def _putresources
-    self._putfonts
-    self._putimages
-    self._putformxobjects
-    self._putimportedobjects
+  def putresources
+    self.putfonts
+    self.putimages
+    self.putformxobjects
+    self.putimportedobjects
     @offsets[2] = @buffer.length
-    self._out('2 0 obj')
-    self._out('<<')
-    self._putresourcedict
-    self._out('>>')
-    self._out('endobj')
+    self.out('2 0 obj')
+    self.out('<<')
+    self.putresourcedict
+    self.out('>>')
+    self.out('endobj')
   end
   
-  def _putformxobjects
+  def putformxobjects
     filter = @compress ? '/Filter /FlateDecode ' : ''
     @tpls.each do |tplidx, tpl|
       p = @compress ? Zlib::Deflate.deflate(tpl['buffer']) : tpl['buffer']
-      self._newobj
+      self.newobj
       @tpls[tplidx]['n'] = @n
-      self._out('<<' + filter + '/Type /XObject')
-      self._out('/Subtype /Form')
-      self._out('/FormType 1')
-      self._out(sprintf('/BBox [%.2f %.2f %.2f %.2f]',
+      self.out('<<' + filter + '/Type /XObject')
+      self.out('/Subtype /Form')
+      self.out('/FormType 1')
+      self.out(sprintf('/BBox [%.2f %.2f %.2f %.2f]',
           (tpl['x'] + (tpl['box']['x'] || 0))*@k,
-          (tpl['h'] + (tpl['box']['y'] || 0) - $tpl['y'])*@k,
+          (tpl['h'] + (tpl['box']['y'] || 0) - tpl['y'])*@k,
           (tpl['w'] + (tpl['box']['x'] || 0))*@k,
-          (tpl['h'] + (tpl['box']['y'] || 0) - $tpl['y']-$tpl['h'])*@k))
-      self._out(sprintf('/Matrix [1 0 0 1 %.5f %.5f]',-tpl['box']['x']*@k, -tpl['box']['y']*@k)) if tpl['box']
-      self._out('/Resources ')
+          (tpl['h'] + (tpl['box']['y'] || 0) - tpl['y']-tpl['h'])*@k))
+      self.out(sprintf('/Matrix [1 0 0 1 %.5f %.5f]',-tpl['box']['x']*@k, -tpl['box']['y']*@k)) if tpl['box']
+      self.out('/Resources ')
       if tpl['resources']
         @current_parser = tpl['parser']
         self.pdf_write_value(tpl['resources'])
       else
-        self._out('<</ProcSet [/PDF /Text /ImageB /ImageC /ImageI]')
+        self.out('<</ProcSet [/PDF /Text /ImageB /ImageC /ImageI]')
         if @_res['tpl'][tplidx]['fonts'].length > 0
-          self._out('/Font <<')
-          @_res['tpl'][tplidx]['fonts'].each { |font| self._out('/F' + font['i'] + ' ' + font['n'] + ' 0 R') }
-          self._out('>>')
+          self.out('/Font <<')
+          @_res['tpl'][tplidx]['fonts'].each { |font| self.out('/F' + font['i'] + ' ' + font['n'] + ' 0 R') }
+          self.out('>>')
         end
         if has_images = @_res['tpl'][tplidx]['images'].length > 0 || has_tpls = @_res['tpl'][tplidx]['tpls'].length > 0
-          self._out('/XObject <<')
+          self.out('/XObject <<')
           if has_images
-            @_res['tpl'][tplidx]['images'].each { |image| self._out('/I' + image['i'] + ' ' + image['n'] + ' 0 R') }
+            @_res['tpl'][tplidx]['images'].each { |image| self.out('/I' + image['i'] + ' ' + image['n'] + ' 0 R') }
           end
           
           if has_tpls
-            @_res['tpl'][tplidx]['tpls'].each { |i, tpl| self._out(@tplprefix + i + ' ' + tpl['n'] + ' 0 R') }
+            @_res['tpl'][tplidx]['tpls'].each { |i, tpl| self.out(@tplprefix + i + ' ' + tpl['n'] + ' 0 R') }
           end
           
-          self._out('>>')
+          self.out('>>')
         end
-        self._out('>>')
+        self.out('>>')
       end
-      self._out('/Length ' + p.length + ' >>')
-  		self._putstream(p)
-  		self._out('endobj')
+      self.out("/Length #{p.length} >>")
+  		self.putstream(p)
+  		self.out('endobj')
   	end
   end
           
-  def _newobj(obj_id=false, onlynewobj=false)
+  def newobj(obj_id=false, onlynewobj=false)
     obj_id = @n += 1 unless obj_id
     
     unless onlynewobj
       @offsets[obj_id] = @buffer.length
-      self._out(obj_id + ' 0 obj')
+      self.out("#{obj_id} 0 obj")
       @_current_obj_id = obj_id
     end
   end
   
   def pdf_write_value(value)
-    case value[0]
-    when (PDF_TYPE_NUMERIC || PDF_TYPE_TOKEN) then self._out(value[1] + " ", false)
+    case value["0"]
+    when (PDF_TYPE_NUMERIC || PDF_TYPE_TOKEN) then self.out(value[1] + " ", false)
     when PDF_TYPE_ARRAY then
-      self._out('[', false)
+      self.out('[', false)
       value[1].times do |i|
         self.pdf_write_value(value[1][i])
       end
-      self._out(']')
+      self.out(']')
     when PDF_TYPE_DICTIONARY then
       # May not be implemented correctly
-      self._out("<<",false)
+      self.out("<<",false)
       value[1].each do |k, v|
-        self._out(k + ' ', false)
+        self.out(k + ' ', false)
         self.pdf_write_value(v)
       end
-      self._out('>>')    
+      self.out('>>')    
     when PDF_TYPE_OBJREF then
       cpfn = @current_parser.filename
       if @_don_obj_stack[cpfn][value[1]]
-        self._newobj(false, true)
+        self.newobj(false, true)
         @_obj_stack[cpfn][value[1]] = [@n, value]
         @_don_obj_stack[cpfn][value[1]] = [@n, value]
       end
       objid = @_don_obj_stack[cpfn][value[1]][0]
-      self._out("##{objid} 0 R")
+      self.out("##{objid} 0 R")
     when PDF_TYPE_STRING then
-      self._out('(' + value[1] + ')')
+      self.out('(' + value[1] + ')')
     when PDF_TYPE_STREAM then
       self.pdf_write_value(value[1])
-      self._out('stream')
-      self._out(value[2][1])
-      self._out('endstream')
+      self.out('stream')
+      self.out(value[2][1])
+      self.out('endstream')
     when PDF_TYPE_HEX then
-      self._out("<" + value[1] + ">")
+      self.out("<" + value[1] + ">")
     when PDF_TYPE_NULL then
-      self._out("null");      
+      self.out("null");      
     end
   end
   
-  def _out(s, ln=true)
+  def out(s, ln=true)
     if @state == 2
       if !@_intpl
         @pages[@page] += s + (ln == true ? "\n" : '')
@@ -233,16 +244,16 @@ class FPDI < FPDF_TPL
         @tpls[@tpl]['buffer'] += s + (ln == true ? "\n" : '')
       end
     else
-      @buffer += s + (ln == true ? "\n" : '')
+      @buffer += s.to_s + (ln == true ? "\n" : '')
     end
   end
   
-  def _enddoc
+  def enddoc
     super
-    self._closeParsers
+    self.closeParsers
   end
   
-  def _closeParsers
+  def closeParsers
     if @state > 2 && @parsers.length > 0
       @parsers.each do |k, v|
         @parsers[k].closeFile
