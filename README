@@ -24,7 +24,3 @@ Requires FPDF for Ruby
 Status
 
 This code is currently pre-alpha and not ready to be used.
-
-First passes of all of the FPDI libraries have been ported. Currently, I am
-working on getting simple cases to work, squashing porting bugs as I find 
-them, and once that is done I will start writing specs.
