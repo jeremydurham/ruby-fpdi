@@ -11,7 +11,7 @@ describe FPDI do
   end
   
   it "should successfully parse a simple PDF" do
-    @pdf.Output('newpdf.pdf')
+    @pdf.Output('test.pdf').should_not be_nil
   end
     
 end
