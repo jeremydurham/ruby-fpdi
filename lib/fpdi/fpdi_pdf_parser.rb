@@ -45,7 +45,7 @@ class FPDIPDFParser < PDFParser
       unless obj[1][1]['/Parent']
         return false
       else
-        res = self._getPageResources(obj[1][1]['/Parent'])
+        res = self.getPageResources(obj[1][1]['/Parent'])
         return res[1] if res[0] == PDF_TYPE_OBJECT        
         return res
       end
@@ -56,31 +56,31 @@ class FPDIPDFParser < PDFParser
     buffer = ''
     
     if @pages[@pageno][1][1]['/Contents']
-      contents = self._getPageContent(@pages[@pageno][1][1]['/Contents'])
-      contents.each { |tmp_content| buffer += self._rebuildContentStream(tmp_content) + ' ' }
+      contents = self.getPageContent(@pages[@pageno][1][1]['/Contents'])
+      contents.each { |tmp_content| buffer += self.rebuildContentStream(tmp_content) + ' ' }
     end
     
     buffer
   end
   
-  def _getPageContent(content_ref)
+  def getPageContent(content_ref)
     contents = []
         
     if content_ref[0] == PDF_TYPE_OBJREF
       content = self.pdf_resolve_object(@c, content_ref)
       if content[1][0] == PDF_TYPE_ARRAY
-        contents = self._getPageContent(content[1])
+        contents = self.getPageContent(content[1])
       else
         contents.push(content)
       end
     elsif content_ref[0] == PDF_TYPE_ARRAY
-      content_ref.each { |tmp_content_ref| contents.update(self._getPageContent(tmp_content_ref)) }
+      content_ref.each { |tmp_content_ref| contents.update(self.getPageContent(tmp_content_ref)) }
     end
     
     contents
   end
 
-  def _rebuildContentStream(obj)
+  def rebuildContentStream(obj)
     filters = []
     
     if obj[1][1]['/Filter']
@@ -169,7 +169,7 @@ class FPDIPDFParser < PDFParser
       if obj[1][1]['/Parent']
         return false
       else
-        res = self._getPageRotation(obj[1][1]['/Parent'])
+        res = self.getPageRotation(obj[1][1]['/Parent'])
         return res[1] if res[0] == PDF_TYPE_OBJECT
         return res
       end
