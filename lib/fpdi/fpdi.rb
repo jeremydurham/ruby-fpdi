@@ -19,6 +19,8 @@ class FPDI < FPDF_TPL
 
   def initialize(orientation='P', unit='mm', format='A4')
     @parsers = {}
+    @_don_obj_stack = {}
+    @_obj_stack = {}
     super(orientation, unit, format)
   end
   
@@ -108,12 +110,12 @@ class FPDI < FPDF_TPL
         if @_obj_stack[filename]
           @_obj_stack[filename].each_key do |n|
             nObj = @current_parser.pdf_resolve_object(@current_parser.c, @_obj_stack[filename][n][1])
-            self._newobj(@_obj_stack[filename][n][0])
+            self.newobj(@_obj_stack[filename][n][0])
             
-            if nObj[0] == PDF_TYPE_STREAM
+            if nObj['0'] == PDF_TYPE_STREAM
               self.pdf_write_value(nObj)
             else
-              self.pdf_write_value(nObj[1])
+              self.pdf_write_value(nObj['1'])
             end
             
             self.out('endobj')
@@ -156,6 +158,7 @@ class FPDI < FPDF_TPL
           (tpl['h'] + (tpl['box']['y'] || 0) - tpl['y']-tpl['h'])*@k))
       self.out(sprintf('/Matrix [1 0 0 1 %.5f %.5f]',-tpl['box']['x']*@k, -tpl['box']['y']*@k)) if tpl['box']
       self.out('/Resources ')
+      
       if tpl['resources']
         @current_parser = tpl['parser']
         self.pdf_write_value(tpl['resources'])
@@ -197,11 +200,11 @@ class FPDI < FPDF_TPL
   end
   
   def pdf_write_value(value)
-    case value["0"]
+    case value[0]
     when (PDF_TYPE_NUMERIC || PDF_TYPE_TOKEN) then self.out(value[1] + " ", false)
     when PDF_TYPE_ARRAY then
       self.out('[', false)
-      value[1].times do |i|
+      value[1].length.times do |i|
         self.pdf_write_value(value[1][i])
       end
       self.out(']')
@@ -215,7 +218,7 @@ class FPDI < FPDF_TPL
       self.out('>>')    
     when PDF_TYPE_OBJREF then
       cpfn = @current_parser.filename
-      if @_don_obj_stack[cpfn][value[1]]
+      if !@_don_obj_stack[cpfn] || !@_don_obj_stack[cpfn][value[1]]
         self.newobj(false, true)
         @_obj_stack[cpfn][value[1]] = [@n, value]
         @_don_obj_stack[cpfn][value[1]] = [@n, value]
