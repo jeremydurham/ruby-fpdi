@@ -317,7 +317,7 @@ class PDFParser
 
     begin
       return false if !c.ensure_content
-      c.offset += (c.buffer[c.offset..-1] =~ /[^ |\n|\r|\t]/) || c.offset.length
+      c.offset += (c.buffer[c.offset..-1] =~ /[^ |\n|\r|\t]/) || c.offset
     end while (c.offset >= (c.length - 1))
     
     char = c.buffer[c.offset].chr
