@@ -1,7 +1,7 @@
 require File.dirname(__FILE__) + '/pdf_parser'
 
 class FPDIPDFParser < PDFParser
-  attr_accessor :fpdi, :availableBoxes, :pages, :pageno
+  attr_accessor :fpdi, :availableBoxes, :pages, :pageno, :filename, :c
   
   def initialize(filename, fpdi)
     @availableBoxes = ['/MediaBox','/CropBox','/BleedBox','/TrimBox','/ArtBox']
@@ -39,14 +39,14 @@ class FPDIPDFParser < PDFParser
     obj = self.pdf_resolve_object(@c, obj)
     if obj[1][1]['/Resources']
       res = self.pdf_resolve_object(@c, obj[1][1]['/Resources'])
-      return res[1] if res[0] == PDF_TYPE_OBJECT
+      return res[1] if res['0'] == PDF_TYPE_OBJECT
       return res
     else
       unless obj[1][1]['/Parent']
         return false
       else
         res = self.getPageResources(obj[1][1]['/Parent'])
-        return res[1] if res[0] == PDF_TYPE_OBJECT        
+        return res[1] if res['0'] == PDF_TYPE_OBJECT        
         return res
       end
     end
