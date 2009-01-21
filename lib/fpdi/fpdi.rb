@@ -220,6 +220,8 @@ class FPDI < FPDF_TPL
       cpfn = @current_parser.filename
       if !@_don_obj_stack[cpfn] || !@_don_obj_stack[cpfn][value[1]]
         self.newobj(false, true)
+        @_obj_stack[cpfn] ||= {}
+        @_don_obj_stack[cpfn] ||= {}
         @_obj_stack[cpfn][value[1]] = [@n, value]
         @_don_obj_stack[cpfn][value[1]] = [@n, value]
       end
