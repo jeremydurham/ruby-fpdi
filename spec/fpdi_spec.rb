@@ -1,7 +1,7 @@
 require 'rubygems'
 require 'ruby-debug'
 require File.dirname(__FILE__) + '/spec_helper'
-require File.dirname(__FILE__) + '/../lib/fpdi/fpdi'
+require File.dirname(__FILE__) + '/../lib/fpdi'
 
 describe FPDI do    
   before do

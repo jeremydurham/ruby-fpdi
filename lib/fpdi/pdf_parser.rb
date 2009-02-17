@@ -177,7 +177,7 @@ class PDFParser
         return [PDF_TYPE_HEX, result]
       end
     when '<<' then
-      result = {}
+      result = Dictionary.new
       while ((key = self.pdf_read_token(c)) != '>>') do
         return false unless key
         return false unless value = self.pdf_read_value(c)
@@ -282,14 +282,11 @@ class PDFParser
           self.error("Unable to find object (#{obj_spec[1]}, #{obj_spec[2]}) at expected location")
         end
         
+        @actual_obj = Dictionary.new
         if encapsulate
-          @actual_obj = {
-            '0'   => PDF_TYPE_OBJECT,
-            'obj' => obj_spec[1],
-            'gen' => obj_spec[2]
-          }
-        else
-          @actual_obj = {}
+          @actual_obj['0'] = PDF_TYPE_OBJECT
+          @actual_obj['obj'] = obj_spec[1]
+          @actual_obj['gen'] = obj_spec[2]
         end
       
         result_pos = 1
@@ -299,7 +296,7 @@ class PDFParser
           break if value[0] == PDF_TYPE_TOKEN && value[1] == 'endobj'
           @actual_obj[result_pos] = value
           result_pos += 1
-        end
+        end        
         
         c.reset(old_pos)
 

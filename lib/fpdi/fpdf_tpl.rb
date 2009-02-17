@@ -4,7 +4,7 @@ class FPDF_TPL < FPDF
   FPDF_TPL_VERSION = '1.1.1'
   
   def initialize(orientation='P', unit='mm', format='A4')
-    @tpls = {}
+    @tpls = Dictionary.new
     @tpl = 0
     @tplprefix = "/TPL"
     @_res = {}

@@ -209,7 +209,6 @@ class FPDI < FPDF_TPL
       end
       self.out(']')
     when PDF_TYPE_DICTIONARY then
-      # May not be implemented correctly
       self.out("<<",false)
       value[1].each do |k, v|
         self.out(k + ' ', false)
